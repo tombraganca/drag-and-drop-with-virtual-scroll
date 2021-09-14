@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 /**
@@ -9,13 +9,17 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
   templateUrl: 'cdk-drag-drop-sorting-example.html',
   styleUrls: ['cdk-drag-drop-sorting-example.css']
 })
-export class CdkDragDropSortingExample implements OnInit {
+export class CdkDragDropSortingExample implements OnInit, OnChanges {
   movies = Array.from({ length: 100000 }).map((_, i) => `Item #${i}`);
 
-  item: any;
+  item: any = document.getElementById('content');
   startIndex: number = 0;
   aux: any;
   endIndex: number = 0;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log('atualizei');
+  }
 
   ngOnInit(): void {
     this.aux = this.movies.slice(0, 10);
@@ -23,9 +27,9 @@ export class CdkDragDropSortingExample implements OnInit {
     this.scrolled();
   }
 
-  drop(event: CdkDragDrop<string[]>) {
-    moveItemInArray(this.movies, event.previousIndex, event.currentIndex);
-    this.setRender(3);
+  async drop(event: CdkDragDrop<string[]>) {
+    moveItemInArray(this.aux, event.previousIndex, event.currentIndex);
+    this.updateList();
   }
 
   scrolled() {
@@ -69,6 +73,15 @@ export class CdkDragDropSortingExample implements OnInit {
 
   verificar() {
     this.scrolled();
+  }
+
+  updateList() {
+    let indexAux = 0;
+    for (let i = this.startIndex; i < this.endIndex; i++) {
+      this.movies[i] = this.aux[indexAux];
+      indexAux++;
+    }
+    this.setRender(3);
   }
 }
 
