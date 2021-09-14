@@ -9,26 +9,27 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
   templateUrl: 'cdk-drag-drop-sorting-example.html',
   styleUrls: ['cdk-drag-drop-sorting-example.css']
 })
-export class CdkDragDropSortingExample implements OnInit, OnChanges {
+export class CdkDragDropSortingExample implements OnInit {
   movies = Array.from({ length: 100000 }).map((_, i) => `Item #${i}`);
 
   item: any = document.getElementById('content');
   startIndex: number = 0;
   aux: any;
   endIndex: number = 0;
+  drag: any;
 
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log('atualizei');
-  }
+
 
   ngOnInit(): void {
     this.aux = this.movies.slice(0, 10);
     this.setRender(2);
     this.scrolled();
+    
   }
 
-  async drop(event: CdkDragDrop<string[]>) {
+  drop(event: CdkDragDrop<string[]>) {
     moveItemInArray(this.aux, event.previousIndex, event.currentIndex);
+    this.drag = this.aux[event.previousIndex];
     this.updateList();
   }
 
@@ -36,7 +37,7 @@ export class CdkDragDropSortingExample implements OnInit, OnChanges {
     this.item = document.getElementById('content');
     if (
       this.item.scrollTop + this.item.offsetHeight >=
-      this.item.scrollHeight
+      this.item.scrollHeight - this.item.scrollHeight/8
     ) {
       this.setRender(1);
       console.log('scrolled botton!!');
@@ -48,11 +49,12 @@ export class CdkDragDropSortingExample implements OnInit, OnChanges {
     console.log('tamanho da div: ' + this.item.offsetHeight);
     console.log('Distancia Rolado: ' + this.item.scrollHeight);
   }
-
+  
   setRender(method: any, start = 0, end = 0) {
+
     if (method == 'toBotton' || method == 1) {
-      this.startIndex += 10;
-      this.endIndex += 10;
+      this.startIndex += 2;
+      this.endIndex += 2;
     } else if (method == 'toTop' || method == 2) {
       if (this.startIndex < 10) {
         this.startIndex = 0;
@@ -69,6 +71,10 @@ export class CdkDragDropSortingExample implements OnInit, OnChanges {
       this.endIndex = this.movies.length;
     }
     this.aux = this.movies.slice(this.startIndex, this.endIndex);
+
+    if (this.drag) {
+      this.aux.unshift(this.drag);
+    }
   }
 
   verificar() {
