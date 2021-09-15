@@ -1,5 +1,7 @@
-import { Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDrag } from '@angular/cdk/drag-drop/public-api';
+import { CdkDragMove, CdkDragSortEvent, CdkDragStart } from '@angular/cdk/drag-drop/drag-events';
 
 /**
  * @title Drag&Drop sorting
@@ -9,83 +11,105 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
   templateUrl: 'cdk-drag-drop-sorting-example.html',
   styleUrls: ['cdk-drag-drop-sorting-example.css']
 })
-export class CdkDragDropSortingExample implements OnInit {
-  movies = Array.from({ length: 100000 }).map((_, i) => `Item #${i}`);
+export class CdkDragDropSortingExample implements OnInit, OnChanges {
+  movies = Array.from({ length: 1000000 }).map((_, i) => `${i}`);
 
-  item: any = document.getElementById('content');
+  item: any;
+  scrollBar: any;
   startIndex: number = 0;
-  aux: any;
+  virtualList: any; //virtualList
   endIndex: number = 0;
-  drag: any;
+  dragIndex: any;
+  haveScroll = false;
 
-
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log('atualizei');
+  }
 
   ngOnInit(): void {
-    this.aux = this.movies.slice(0, 10);
+    this.item = document.getElementById('content');
+    this.item.addEventListener('scroll', (e: any) => this.scrolled())
     this.setRender(2);
-    this.scrolled();
-    
+    this.scrolled('init');
   }
 
   drop(event: CdkDragDrop<string[]>) {
-    moveItemInArray(this.aux, event.previousIndex, event.currentIndex);
-    this.drag = this.aux[event.previousIndex];
-    this.updateList();
+    //console.log(event.);
+    //console.log('drag!')
+    this.dragIndex = []
+    moveItemInArray(this.virtualList, event.previousIndex, event.currentIndex);
+    this.updateList(this.haveScroll);
+    this.haveScroll = false;
   }
 
-  scrolled() {
-    this.item = document.getElementById('content');
-    if (
-      this.item.scrollTop + this.item.offsetHeight >=
-      this.item.scrollHeight - this.item.scrollHeight/8
-    ) {
-      this.setRender(1);
-      console.log('scrolled botton!!');
-    } else if (this.item.scrollTop == 0 && this.startIndex >= 10) {
-      console.log('scrolled top!!');
-      this.setRender(2);
-    }
-    console.log('Distancia do top: ' + this.item.scrollTop);
-    console.log('tamanho da div: ' + this.item.offsetHeight);
-    console.log('Distancia Rolado: ' + this.item.scrollHeight);
+  drag(event: any) {
+    // this.state = 'dragStarted';
+    this.dragIndex = this.movies[event.source.element.nativeElement.id.replace("_id:",'')];
+    //console.log(event.source.element.nativeElement.id.replace("_id:",''));
   }
-  
-  setRender(method: any, start = 0, end = 0) {
 
-    if (method == 'toBotton' || method == 1) {
-      this.startIndex += 2;
-      this.endIndex += 2;
-    } else if (method == 'toTop' || method == 2) {
-      if (this.startIndex < 10) {
-        this.startIndex = 0;
-        this.endIndex = 10;
-      } else {
-        this.startIndex -= 10;
-        this.endIndex -= 10;
+  scrolled(method = 'scrolled', itemSize = 50, itemToAdd = 10) {
+    if (method == 'init') {
+      this.virtualList = [];
+      this.setRender(method, itemSize, itemToAdd);
+    } else { 
+        if (
+        this.item.scrollTop + this.item.offsetHeight >=
+        (this.item.scrollHeight - this.item.scrollHeight/20)
+        ) {
+          this.setRender(1);
+          console.log('scrolled botton!!');
+        } else if (this.startIndex != 0 && this.item.scrollTop > 0 && this.item.scrollTop <= this.item.scrollHeight/20 ) {
+          console.log('scrolled top!!');
+          this.setRender(2);
       }
+    
+    }
+    //console.log('Distancia do top: ' + this.item.scrollTop);
+    //console.log('tamanho da div: ' + this.item.offsetHeight);
+    //console.log('Distancia Rolado: ' + this.item.scrollHeight);
+  }
+
+  setRender(method: any, itemSize = 50, itemToAdd = 10) {
+    if (method == 'init'){
+      this.startIndex = 0;
+      this.endIndex = itemSize;
+      this.virtualList = this.movies.slice(this.startIndex, this.endIndex);
+
+    } else if (method == 'toBotton' || method == 1) {
+      this.startIndex += itemToAdd;
+      this.endIndex += itemToAdd;
+    } else if (method == 'toTop' || method == 2) {
+        this.startIndex -= itemToAdd;
+        this.endIndex -= itemToAdd;
     } else if (method == 'upgrade' || method == 3) {
-      this.aux = this.movies.slice(this.startIndex, this.endIndex);
+      this.virtualList = this.movies.slice(this.startIndex, this.endIndex);
     }
     if (this.endIndex >= this.movies.length) {
       this.startIndex = this.movies.length - 10;
       this.endIndex = this.movies.length;
     }
-    this.aux = this.movies.slice(this.startIndex, this.endIndex);
-
-    if (this.drag) {
-      this.aux.unshift(this.drag);
+    if (this.dragIndex?.length > 0){
+      this.haveScroll = true
+      let aux = this.movies.slice(0, this.endIndex);
+      this.virtualList = aux;
+    } else {
+      this.virtualList = this.movies.slice(this.startIndex, this.endIndex);
     }
   }
 
-  verificar() {
-    this.scrolled();
-  }
-
-  updateList() {
+  updateList(haveScroll: boolean) {
     let indexAux = 0;
-    for (let i = this.startIndex; i < this.endIndex; i++) {
-      this.movies[i] = this.aux[indexAux];
-      indexAux++;
+    if(haveScroll){
+      for (let i = 0; i < this.endIndex; i++) {
+        this.movies[i] = this.virtualList[indexAux];
+        indexAux++;
+      }
+    } else {
+      for (let i = this.startIndex; i < this.endIndex; i++) {
+        this.movies[i] = this.virtualList[indexAux];
+        indexAux++;
+      }
     }
     this.setRender(3);
   }
